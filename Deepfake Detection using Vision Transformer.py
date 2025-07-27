@@ -49,7 +49,7 @@ if uploaded_file:
         pred = torch.argmax(probs).item()
         confidence = probs[0][pred].item()
 
-    label = "Real" if pred == 1 else "Fake"
+    label = "Real" if pred == 0 else "Fake"
     color = "green" if label == "Real" else "red"
     st.markdown(f"### Prediction: <span style='color:{color}'>**{label}**</span> ({confidence:.2%} confidence)", unsafe_allow_html=True)
 
