@@ -23,10 +23,8 @@ if not os.path.exists(MODEL_PATH):
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])  # for 3 channels
+    transforms.Normalize([0.5], [0.5])
 ])
-
-
 
 @st.cache_resource
 def load_model():
@@ -51,9 +49,10 @@ if uploaded_file:
         pred = torch.argmax(probs).item()
         confidence = probs[0][pred].item()
 
-    label = "Real" if pred == 0 else "Fake"
+    label = "Real" if pred == 1 else "Fake"
     color = "green" if label == "Real" else "red"
-    st.markdown(f"### Prediction: <span style='color:{color}'>**{label}**</span> ({confidence:.2%} confidence)", unsafe_allow_html=True)
+    st.markdown(f"### Prediction: <span style='color:{color}'>**{label}**</span>", unsafe_allow_html=True)
+    st.markdown(f"**Confidence:** `{confidence:.2%}`")
 
     st.markdown("#### Class Probabilities:")
     st.write({ "Fake": f"{probs[0][0].item():.2%}", "Real": f"{probs[0][1].item():.2%}" })
