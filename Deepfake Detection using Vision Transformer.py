@@ -23,8 +23,10 @@ if not os.path.exists(MODEL_PATH):
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize([0.5], [0.5])
+    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])  # for 3 channels
 ])
+
+
 
 @st.cache_resource
 def load_model():
