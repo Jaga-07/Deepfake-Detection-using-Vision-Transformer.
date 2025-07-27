@@ -1,27 +1,40 @@
-import streamlit as st
-from PIL import Image
+import os
+import gdown
 import torch
 import timm
 from torchvision import transforms
+from PIL import Image
+import streamlit as st
 
-# Set up preprocessing transform
+# Load File ID securely from environment variable
+FILE_ID = os.getenv("GDRIVE_FILE_ID") or "1GqwTDcFrFmy_FeGm5aZiSEvh3y9B1pMx"
+MODEL_PATH = "deepfake_vit_model.pth"
+GDRIVE_URL = f"https://drive.google.com/uc?id={FILE_ID}"
+
+# ✅ Download model only if not already present
+if not os.path.exists(MODEL_PATH):
+    st.info("🔽 Downloading model from Google Drive...")
+    gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False)
+    if not os.path.exists(MODEL_PATH):
+        st.error("❌ Failed to download model. Please check the File ID and make sure the file is public.")
+        st.stop()
+
+# Image preprocessing
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.5], [0.5])
 ])
 
-# Safe model loading
 @st.cache_resource
 def load_model():
     model = timm.create_model('vit_base_patch16_224', pretrained=False, num_classes=2)
-    state_dict = torch.load("deepfake_vit_model.pth", map_location='cpu')  # weights-only file
+    state_dict = torch.load(MODEL_PATH, map_location='cpu')
     model.load_state_dict(state_dict)
     model.eval()
     return model
 
-# Title and uploader
-st.title("🔍 Deepfake Detection using Vision Transformer")
+st.title("🔍 Deepfake Detection using ViT")
 model = load_model()
 
 uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
@@ -36,5 +49,10 @@ if uploaded_file:
         pred = torch.argmax(probs).item()
         confidence = probs[0][pred].item()
 
-    label = "Fake" if pred == 0 else "Real"
-    st.markdown(f"### Prediction: **{label}** ({confidence:.2%} confidence)")
+    label = "Real" if pred == 1 else "Fake"
+    color = "green" if label == "Real" else "red"
+    st.markdown(f"### Prediction: <span style='color:{color}'>**{label}**</span>", unsafe_allow_html=True)
+    st.markdown(f"**Confidence:** `{confidence:.2%}`")
+
+    st.markdown("#### Class Probabilities:")
+    st.write({ "Fake": f"{probs[0][0].item():.2%}", "Real": f"{probs[0][1].item():.2%}" })
